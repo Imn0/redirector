@@ -60,7 +60,6 @@ int redirect_fd_to_path(const char *Spid, const char *Sfd, const char *path)
         printf("Invalid pid\n");
         return 1;
     }
-
     int fd = strtol(Sfd, &endptr, 10);
     if (errno != 0 || *endptr != '\0')
     {
@@ -96,10 +95,13 @@ int redirect_fd_to_path(const char *Spid, const char *Sfd, const char *path)
 
     //  \/will be in rax  \/in addr
     // int new_fd = open(path, O_WRONLY | O_CREAT, S_IRWXU | S_IRWXG | S_IRWXO);
-    registers.rip = (datatype)(addr + path_len);   // set new instruction pointer
-    registers.rax = 0x02;                          // sys call to open a file
-    registers.rdi = (datatype)addr;                // first argument for open (const char *path)
-    registers.rsi = O_CREAT;                       // write only and create (int flags)
+    registers.rip = (datatype)(addr + path_len); // set new instruction pointer
+    registers.rax = 0x02;                        // sys call to open a file
+    registers.rdi = (datatype)addr;              // first argument for open (const char *path)
+    if (fd == 0)
+        registers.rsi = O_CREAT;
+    else
+        registers.rsi = O_WRONLY | O_CREAT;        // write only and create (int flags)
     registers.rdx = S_IRWXU | S_IRWXG | S_IRWXO;   // read write for owner, group and others (umode_t mode)
     ptrace(PTRACE_SETREGS, pid, NULL, &registers); // put changed registers back in
     ptrace(PTRACE_CONT, pid, NULL, NULL);          // continue process
